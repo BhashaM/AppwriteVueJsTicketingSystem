@@ -45,19 +45,19 @@ axios.interceptors.request.use(function (config) {
 const routes = [
     { path: '/create', component: TicketCreate },
     { path: '/list', component: TicketList },
-    // { path: '/adminList', component: AdminTicketList },
-    // { path: '/employeecreate', component: EmployeeCreate },
-    // { path: '/employeeList', component: EmployeeList },
-    // { path: '/ticketTypeList', component: ManageTicket },
-    // { path: '/priorityList', component: ManageProrityType },
-    // { path: '/companyList', component: ManageCompany },
-    // { path: '/empTicketList', component: EmpTicketList },
+    { path: '/adminList', component: AdminTicketList },
+    { path: '/employeecreate', component: EmployeeCreate },
+    { path: '/employeeList', component: EmployeeList },
+    { path: '/ticketTypeList', component: ManageTicket },
+    { path: '/priorityList', component: ManageProrityType },
+    { path: '/companyList', component: ManageCompany },
+    { path: '/empTicketList', component: EmpTicketList },
     {
         path: '/',
         component: LayoutDiv,
         children: [
-            { path: '', name: 'Login',component: UserLogin },
-            { path: 'register',name:'Register', component: UserRegisterTemplate },
+            { path: '', name: 'Login', component: UserLogin },
+            { path: 'register', name: 'Register', component: UserRegisterTemplate },
         ]
     },
     {
