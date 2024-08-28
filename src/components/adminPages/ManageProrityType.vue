@@ -55,7 +55,7 @@
                   <a data-bs-toggle="modal" data-bs-target="#exampleModal" @click="openModal(priority)">
                     <i class="bi bi-pencil-fill text-primary mx-2"></i>
                   </a>
-                  <i class="bi bi-trash3-fill text-danger" @click="handleDelete(priority.id)"></i>
+                  <i class="bi bi-trash3-fill text-danger" @click="handleDelete(priority.$id)"></i>
                 </td>
               </tr>
             </tbody>
@@ -90,6 +90,8 @@ import axios from 'axios';
 import LayoutDiv from '../LayoutDiv.vue';
 import Swal from 'sweetalert2';
 import { Modal } from 'bootstrap';
+import { Databases, ID } from 'appwrite';  // Ensure ID is imported along with Databases
+import { client } from '/src/appwrite'; // Adjust the path if necessary
 
 export default {
   name: 'PriorityType',
@@ -128,9 +130,25 @@ export default {
     },
   },
   created() {
-    this.getAllPriority();
+    this.fetchPriorities();
   },
+    
   methods: {
+    async fetchPriorities() {
+    try {
+      const databases = new Databases(client);
+      const dbId = '66cc10ed002e90bf6173'; // Replace with your actual database ID
+      const collectionId = '66cd6e59001671bc7ffc'; // Replace with your actual collection ID
+
+      const prioritiesResponse = await databases.listDocuments(dbId, collectionId);
+      this.priorities = prioritiesResponse.documents;
+
+      console.log('Priorities:', this.priorities);
+
+    } catch (error) {
+      console.error("Failed to fetch data:", error);
+    }
+  },
     openModal(priority) {
       this.selectedPriority = priority ? { ...priority } : { priorityName: '' };
     },
@@ -160,70 +178,157 @@ export default {
         });
     },
 
+    // savePriority() {
+    //   const payload = {
+    //     priorityName: this.selectedPriority.priorityName,
+    //   };
+    //   const url = this.selectedPriority.id ? `/api/updatePriority/${this.selectedPriority.id}` : '/api/savePriority';
+    //   const method = this.selectedPriority.id ? 'put' : 'post';
+    //   axios({ method, url, data: payload })
+    //     .then(() => {
+    //       Swal.fire({
+    //         icon: 'success',
+    //         title: method === 'put' ? 'Updated' : 'Saved',
+    //         text: `The priority type was ${method === 'put' ? 'updated' : 'saved'} successfully`,
+    //       }).then(() => {
+    //         this.closeModal();
+    //         this.getAllPriority();
+    //       });
+    //     })
+    //     .catch(error => {
+    //       Swal.fire({
+    //         icon: 'error',
+    //         title: 'Error',
+    //         text: error.response?.data?.message || `There was a problem ${method === 'put' ? 'updating' : 'saving'} the priority type`,
+    //       });
+    //     });
+    // },
+
     savePriority() {
-      const payload = {
-        priorityName: this.selectedPriority.priorityName,
-      };
-      const url = this.selectedPriority.id ? `/api/updatePriority/${this.selectedPriority.id}` : '/api/savePriority';
-      const method = this.selectedPriority.id ? 'put' : 'post';
-      axios({ method, url, data: payload })
-        .then(() => {
-          Swal.fire({
-            icon: 'success',
-            title: method === 'put' ? 'Updated' : 'Saved',
-            text: `The priority type was ${method === 'put' ? 'updated' : 'saved'} successfully`,
-          }).then(() => {
-            this.closeModal();
-            this.getAllPriority();
-          });
-        })
-        .catch(error => {
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: error.response?.data?.message || `There was a problem ${method === 'put' ? 'updating' : 'saving'} the priority type`,
-          });
-        });
-    },
+  const databases = new Databases(client); // Initialize the Databases object with the client
+  const payload = {
+    priorityName: this.selectedPriority.priorityName,
+  };
 
-
-    handleDelete(id) {
+  if (this.selectedPriority.id) {
+    // Update existing priority
+    databases.updateDocument(
+      '66cc10ed002e90bf6173', // Replace with your actual database ID
+      '66cd6e59001671bc7ffc', // Replace with your actual collection ID
+       this.selectedPriority.id, // The document ID to update
+      payload
+    )
+    .then(() => {
       Swal.fire({
-        title: 'Are you sure?',
-        text: "You won't be able to revert this!",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Yes, delete it!',
-      }).then((result) => {
-        if (result.isConfirmed) {
-          axios.delete(`/api/deletePriority/${id}`)
-            .then(() => {
-              Swal.fire({
-                icon: 'success',
-                title: 'Deleted',
-                text: 'The priority type was deleted successfully',
-              });
-              this.getAllPriority();
-            })
-            .catch(error => {
-              Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: error.response?.data?.message || 'There was a problem deleting the priority type',
-              });
-            });
-        }
+        icon: 'success',
+        title: 'Updated',
+        text: 'The priority type was updated successfully',
+      }).then(() => {
+        this.closeModal();
+        this.fetchPriorities();
       });
-    },
+    })
+    .catch(error => {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message || 'There was a problem updating the priority type',
+      });
+    });
+  } else {
+    // Create a new priority
+    databases.createDocument(
+      '66cc10ed002e90bf6173', // Replace with your actual database ID
+      '66cd6e59001671bc7ffc', // Replace with your actual collection ID
+      ID.unique(), // Automatically generate a unique document ID
+      payload
+    )
+    .then(() => {
+      Swal.fire({
+        icon: 'success',
+        title: 'Saved',
+        text: 'The priority type was saved successfully',
+      }).then(() => {
+        this.closeModal();
+        this.fetchPriorities();
+      });
+    })
+    .catch(error => {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message || 'There was a problem saving the priority type',
+      });
+    });
+  }
+},
+
+
+handleDelete(id) {
+  Swal.fire({
+    title: 'Are you sure?',
+    text: "You won't be able to revert this!",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Yes, delete it!',
+  }).then((result) => {
+    if (result.isConfirmed) {
+      const databases = new Databases(client); // Initialize Databases object with the client
+
+      databases.deleteDocument(
+        '66cc10ed002e90bf6173', // Replace with your actual database ID
+        '66cd6e59001671bc7ffc', // Replace with your actual collection ID
+        id // The document ID to delete
+      )
+      .then(() => {
+        Swal.fire({
+          icon: 'success',
+          title: 'Deleted',
+          text: 'The priority type was deleted successfully',
+        });
+        this.fetchPriorities(); // Refresh the list of priorities
+      })
+      .catch(error => {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: error.message || 'There was a problem deleting the priority type',
+        });
+      });
+    }
+  });
+},
+
     changePage(page) {
       if (page > 0 && page <= this.totalPages) {
         this.currentPage = page;
       }
     },
   },
+  
+  // async mounted() {
+  //   try {
+  //     const databases = new Databases(client);
+
+  //     // Use Promise.all to handle multiple API calls simultaneously
+  //     const [priorityResponse] = await Promise.all([
+  //       databases.listDocuments('66cc10ed002e90bf6173', '66cd6e59001671bc7ffc')
+  //     ]);
+
+  //     this.priorities = priorityResponse.documents;
+    
+
+  //     console.log('Priorities:', this.priorities);
+      
+
+  //   } catch (error) {
+  //     console.error("Failed to fetch data:", error);
+  //   }
+  // }
 };
+
 </script>
 
 <style scoped>
