@@ -56,8 +56,8 @@ const routes = [
         path: '/',
         component: LayoutDiv,
         children: [
-            { path: '', name: 'Login',component: UserLogin },
-            { path: 'register',name:'Register', component: UserRegisterTemplate },
+            { path: '', name: 'Login', component: UserLogin },
+            { path: 'register', name: 'Register', component: UserRegisterTemplate },
         ]
     },
     {
