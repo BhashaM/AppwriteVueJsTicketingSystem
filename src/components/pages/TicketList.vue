@@ -42,12 +42,12 @@
                             <td colspan="8" class="text-center fs-5">No data available.</td>
                         </tr>
                         <tr v-for="(ticket, i) in paginatedData" :key="ticket.$id">
-                            <td>{{ i + 1 }}</td>
+                            <td>{{ (currentPage - 1) * itemsPerPage + i + 1 }}</td>
                             <td>{{ ticket.ticketTypeName }}</td>
                             <!-- <td>{{ ticket.createdOn }}</td> -->
                             <td>{{ ticket.commentBox }}</td>
                             <td>{{ ticket.priorityName }}</td>
-                            <td>{{ ticket.expectedDeliveryDate }}</td>
+                            <td>{{ formatDate(ticket.expectedDeliveryDate) }}</td>
                             <td>
                                 <!-- <span class="badge rounded-pill text-white" :class="{
                                     'bg-warning': ticket.status.toLowerCase() === 'assigned',
@@ -161,7 +161,7 @@
                                 <div class="col-md-4">
                                     <div class="form-group">
                                         <label for="createdOn" class="form-label">Ticket Type</label>
-                                        <input type="text" v-model="selectedTicket.ticketName" class="form-control" />
+                                        <input type="text" v-model="selectedTicket.ticketTypeName" class="form-control" />
                                     </div>
                                 </div>
                                 <div class="col-md-3">
@@ -215,7 +215,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted,computed  } from 'vue';
 import { Databases } from 'appwrite';
 import { client } from '/src/appwrite';
 
@@ -286,6 +286,8 @@ export default {
 
         const openModal = (ticket) => {
             selectedTicket.value = { ...ticket };
+            console.log(JSON.stringify(selectedTicket.value))
+            selectedTicket.value.expectedDeliveryDate = new Date(ticket.expectedDeliveryDate).toISOString().split('T')[0];
             showModal.value = true;
         };
 
@@ -306,7 +308,48 @@ export default {
                 console.error('Error updating ticket:', error);
             }
         };
+        const changePage = (pageNumber) => {
+            if (pageNumber < 1 || pageNumber > totalPages.value) return;
+            currentPage.value = pageNumber;
+        };
+        const filteredTickets = computed(() => {
+            const query = searchQuery.value.toLowerCase();
+            const ticketsArray = tickets.value || []; // Fallback to empty array if undefined
+            return ticketsArray.filter(ticket => {
+                const matchesTab = activeTab.value === 'ALL' || ticket.status.toUpperCase() === activeTab.value;
+                const matchesQuery = (
+                    (ticket.companyName?.toLowerCase().includes(query) || '') ||
+                    (ticket.address?.toLowerCase().includes(query) || '') ||
+                    (ticket.personName?.toLowerCase().includes(query) || '') ||
+                    (ticket.phoneNumber?.toLowerCase().includes(query) || '') ||
+                    (ticket.emailId?.toLowerCase().includes(query) || '') ||
+                    (ticket.ticketName?.toLowerCase().includes(query) || '') ||
+                    (ticket.status?.toLowerCase().includes(query) || '') ||
+                    (ticket.priorityName?.toLowerCase().includes(query) || '') ||
+                    (ticket.ticketTypeName?.toLowerCase().includes(query) || '')
+                );
+                return matchesTab && matchesQuery;
+            });
+        });
 
+        const totalPages = computed(() => {
+            return Math.ceil(filteredTickets.value.length / itemsPerPage.value);
+        });
+
+        const paginatedData = computed(() => {
+            const start = (currentPage.value - 1) * itemsPerPage.value;
+            const end = start + itemsPerPage.value;
+            return filteredTickets.value.slice(start, end);
+        });
+
+        const formatDate = (dateString) => {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            const day = String(date.getUTCDate()).padStart(2, '0');
+            const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+            const year = date.getUTCFullYear();
+            return `${day}-${month}-${year}`;
+        };
 
         onMounted(() => {
             fetchTicketList();
@@ -325,38 +368,42 @@ export default {
             deleteTicket,
             openModal,
             closeModal,
-            submitUpdate
+            submitUpdate,
+            changePage,
+            totalPages,
+            paginatedData,
+            formatDate
         };
     },
-    computed: {
-        filteredTickets() {
-            const query = this.searchQuery.toLowerCase();
-            const ticketsArray = this.tickets || []; // Fallback to empty array if undefined
-            return ticketsArray.filter(ticket => {
-                const matchesTab = this.activeTab === 'ALL' || ticket.status.toUpperCase() === this.activeTab;
-                const matchesQuery = (
-                    (ticket.companyName?.toLowerCase().includes(query) || '') ||
-                    (ticket.address?.toLowerCase().includes(query) || '') ||
-                    (ticket.personName?.toLowerCase().includes(query) || '') ||
-                    (ticket.phoneNumber?.toLowerCase().includes(query) || '') ||
-                    (ticket.emailId?.toLowerCase().includes(query) || '') ||
-                    (ticket.ticketName?.toLowerCase().includes(query) || '') ||
-                    (ticket.status?.toLowerCase().includes(query) || '') ||
-                    (ticket.priorityName?.toLowerCase().includes(query) || '') ||
-                    (ticket.ticketTypeName?.toLowerCase().includes(query) || '')
-                );
-                return matchesTab && matchesQuery;
-            });
-        },
-        totalPages() {
-            return Math.ceil(this.filteredTickets.length / this.itemsPerPage);
-        },
-        paginatedData() {
-            const start = (this.currentPage - 1) * this.itemsPerPage;
-            const end = start + this.itemsPerPage;
-            return this.filteredTickets.slice(start, end);
-        }
-    },
+    // computed: {
+    //     filteredTickets() {
+    //         const query = this.searchQuery.toLowerCase();
+    //         const ticketsArray = this.tickets || []; // Fallback to empty array if undefined
+    //         return ticketsArray.filter(ticket => {
+    //             const matchesTab = this.activeTab === 'ALL' || ticket.status.toUpperCase() === this.activeTab;
+    //             const matchesQuery = (
+    //                 (ticket.companyName?.toLowerCase().includes(query) || '') ||
+    //                 (ticket.address?.toLowerCase().includes(query) || '') ||
+    //                 (ticket.personName?.toLowerCase().includes(query) || '') ||
+    //                 (ticket.phoneNumber?.toLowerCase().includes(query) || '') ||
+    //                 (ticket.emailId?.toLowerCase().includes(query) || '') ||
+    //                 (ticket.ticketName?.toLowerCase().includes(query) || '') ||
+    //                 (ticket.status?.toLowerCase().includes(query) || '') ||
+    //                 (ticket.priorityName?.toLowerCase().includes(query) || '') ||
+    //                 (ticket.ticketTypeName?.toLowerCase().includes(query) || '')
+    //             );
+    //             return matchesTab && matchesQuery;
+    //         });
+    //     },
+    //     totalPages() {
+    //         return Math.ceil(this.filteredTickets.length / this.itemsPerPage);
+    //     },
+    //     paginatedData() {
+    //         const start = (this.currentPage - 1) * this.itemsPerPage;
+    //         const end = start + this.itemsPerPage;
+    //         return this.filteredTickets.slice(start, end);
+    //     }
+    // },
 };
 </script>
 
