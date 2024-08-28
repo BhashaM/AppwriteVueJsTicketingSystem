@@ -58,7 +58,7 @@
 
             <div class="col-md-4 mb-3">
               <label for="ticketId" class="form-label">Ticket ID</label>
-              <select id="ticketId" v-model="form.ticketId" @input="clearError('ticketId')" class="form-control shadow"
+              <select id="ticketId" v-model="form.ticketId"  @change="clearError('ticketId')" class="form-control shadow"
                 :class="{ 'is-invalid': errors.ticketId }">
                 <option value="" disabled>Select ticket</option>
                 <option v-for="ticket in tickets" :key="ticket.$id" :value="ticket.$id">
@@ -70,7 +70,7 @@
 
             <div class="col-md-4 mb-3">
               <label for="priorityId" class="form-label">Priority</label>
-              <select id="priorityId" v-model="form.priorityId" @input="clearError('priorityId')"
+              <select id="priorityId" v-model="form.priorityId" @change="clearError('priorityId')"
                 class="form-control shadow" :class="{ 'is-invalid': errors.priorityId }">
                 <option value="" disabled>Select priority</option>
                 <option v-for="priority in priorities" :key="priority.$id" :value="priority.$id">
@@ -164,8 +164,7 @@ export default {
   ,
   methods: {
     async handleSubmit() {
-      alert("hii");
-      this.submitted = true;
+      // this.submitted = true;
       this.errors = {};
       // Validation
       if (!this.form.companyName) this.errors.companyName = 'Company Name is required';
