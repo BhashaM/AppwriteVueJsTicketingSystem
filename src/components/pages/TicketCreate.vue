@@ -110,7 +110,8 @@
 import LayoutDiv from '../LayoutDiv.vue';
 import Swal from 'sweetalert2';
 import { Databases, Storage, ID } from 'appwrite';
-import { client } from '/src/appwrite'; // Adjust the path
+import { client,account } from '/src/appwrite'; // Adjust the path
+// import { mapState } from 'vuex';
 
 export default {
   name: 'TicketCreate',
@@ -141,6 +142,7 @@ export default {
     };
   },
 
+
   async mounted() {
     try {
       const databases = new Databases(client);
@@ -160,11 +162,19 @@ export default {
     } catch (error) {
       console.error("Failed to fetch data:", error);
     }
+    try {
+      const userDetails = await account.get();
+      this.userId = userDetails.$id; // Store userId in a data property
+    } catch (error) {
+      console.error('Failed to fetch user details:', error);
+    }
   }
   ,
   methods: {
     async handleSubmit() {
       // this.submitted = true;
+      this.form.userId=this.userId;
+      alert(this.userId)
       this.errors = {};
       // Validation
       if (!this.form.companyName) this.errors.companyName = 'Company Name is required';

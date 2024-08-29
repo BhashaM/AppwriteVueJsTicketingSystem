@@ -9,6 +9,7 @@ const store = createStore({
       token: null, 
       user: null,
       role: null,
+      userId:null,
     };
   },
   mutations: {
@@ -25,6 +26,10 @@ const store = createStore({
       state.token = null;
       state.user = null;
       state.role = null;
+      state.UserId = null;
+    },
+    setUserId(state, userId) {
+      state.userId =userId; // Mutation to set the userId
     },
   },
   actions: {
@@ -32,7 +37,8 @@ const store = createStore({
       commit('setToken', authData.token);
       commit('setUser', authData.user);
       commit('setRole', authData.role);
-       router.push({ path:'/user/create' });
+      store.commit('setUserId',  authData.user.$id);
+        router.push({ path:'/user/create' });
     },
     logout({ commit }) {
       commit('clearAuthData');
