@@ -34,7 +34,7 @@
                 <td>{{ company.phone }}</td>
                 <td>
                   <button @click="openModal(company)" class="btn btn-outline-info mx-1">Edit</button>
-                  <i class="bi bi-trash3-fill text-danger" @click="deleteCompany(company.id)"></i>
+                  <i class="bi bi-trash3-fill text-danger" @click="deleteCompany(company.$id)"></i>
                 </td>
               </tr>
             </tbody>
@@ -96,11 +96,11 @@
 
 
 <script>
-import axios from 'axios';
 import LayoutDiv from '../LayoutDiv.vue';
 import Swal from 'sweetalert2';
 import { Modal } from 'bootstrap';
-
+import { Databases } from 'appwrite';  // Ensure ID is imported along with Databases
+import { client } from '/src/appwrite'; // Adjust the path if necessary
 export default {
   name: 'CompanyList',
   components: {
@@ -110,7 +110,7 @@ export default {
     return {
       companies: [],
       selectedCompany: {
-        id: '',
+         id: '',
         name: '',
         email: '',
         phone: '',
@@ -135,6 +135,7 @@ export default {
     },
   },
   methods: {
+   
     filteredTickets() {
       const query = this.searchQuery.toLowerCase();
       return this.companies.filter(company => {
@@ -144,18 +145,53 @@ export default {
         return matchesQuery;
       });
     },
-    fetchCompanyList() {
-      axios.get('/api/getCompanylist')
-        .then(response => {
-          this.companies = response.data.data;
-        })
-        .catch(error => {
-          console.error('Error fetching companies:', error);
-        });
-    },
+
+//     fetchCompanyList() {
+//       const databases = new Databases(client);
+//   // Assuming 'companies' is your collection ID and 'databaseId' is your database ID
+//   const databaseId = '66cc10ed002e90bf6173';
+//   const collectionId = '66cf2d3f0024b79b4fbd';
+
+//   databases.listDocuments(databaseId, collectionId)
+//     .then(response => {
+//       this.companies = response.documents;
+//     })
+//     .catch(error => {
+//       console.error('Error fetching companies:', error.message);
+//     });
+// },
+
+fetchEmployeeList() {
+  const databases = new Databases(client); // Initialize the Databases service
+  const dbId = '66cc10ed002e90bf6173'; // Replace with your actual database ID
+  const collectionId = '66cfc6ec0005fdc28b38'; // Replace with your actual collection ID
+
+  databases.listDocuments(dbId, collectionId)
+    .then(response => {
+      console.log('API Response:', response);
+      this.employees = response.documents.map(doc => ({
+        ...doc,
+        id: doc.$id  // Ensure the ID is correctly assigned
+      }));
+    })
+    .catch(error => {
+      console.error('Error fetching employees:', error.message);
+    });
+}
+,
+    // fetchCompanyList() {
+    //   axios.get('/api/getCompanylist')
+    //     .then(response => {
+    //       this.companies = response.data.data;
+    //     })
+    //     .catch(error => {
+    //       console.error('Error fetching companies:', error);
+    //     });
+    // },
     openModal(company = null) {
       if (company) {
         this.selectedCompany = { ...company };
+        console.log('Selected company:', this.selectedCompany);
         this.isEditing = true;
       } else {
         this.selectedCompany = {
@@ -163,6 +199,7 @@ export default {
           name: '',
           email: '',
           phone: '',
+          userId:'',
         };
         this.isEditing = false;
       }
@@ -175,78 +212,301 @@ export default {
       modalInstance.hide();
     },
     createCompany() {
-      axios.post('/api/saveCompanyDetails', this.selectedCompany)
-        .then(() => {
-          Swal.fire({
-            icon: 'success',
-            title: 'Created',
-            text: 'The company was created successfully',
-          }).then(() => {
-            this.fetchCompanyList();
-            this.closeModal();
-          });
-        })
-        .catch(error => {
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: error.response?.data?.message || 'There was a problem creating the company',
-          });
-        });
-    },
-    updateCompany() {
-      axios.put(`/api/updateCompanyDetails/${this.selectedCompany.id}`, this.selectedCompany)
-        .then(() => {
-          Swal.fire({
-            icon: 'success',
-            title: 'Updated',
-            text: 'The company was updated successfully',
-          }).then(() => {
-            this.fetchCompanyList();
-            this.closeModal();
-          });
-        })
-        .catch(error => {
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: error.response?.data?.message || 'There was a problem updating the company',
-          });
-        });
-    },
-    deleteCompany(id) {
+     
+      const databases = new Databases(client);
+     
+  // Assuming 'companies' is your collection ID and 'databaseId' is your database ID
+  const databaseId = '66cc10ed002e90bf6173';
+  const collectionId = '66cf2d3f0024b79b4fbd';
+
+
+  databases.createDocument(databaseId, collectionId, 'unique()', this.selectedCompany)
+    .then(() => {
       Swal.fire({
-        title: 'Are you sure?',
-        text: "You won't be able to revert this!",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Yes, delete it!'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          axios.delete(`/api/deleteCompanyDetails/${id}`)
-            .then(() => {
-              Swal.fire({
-                icon: 'success',
-                title: 'Company deleted successfully!',
-                showConfirmButton: false,
-                timer: 1500
-              });
-              this.fetchCompanyList(); // Refresh list after deletion
-            })
-            .catch(error => {
-              Swal.fire({
-                icon: 'error',
-                title: 'An Error Occurred!',
-                showConfirmButton: false,
-                timer: 1500
-              });
-              console.error('Error deleting company:', error);
-            });
-        }
+        icon: 'success',
+        title: 'Created',
+        text: 'The company was created successfully',
+      }).then(() => {
+        this.fetchCompanyList();
+        this.closeModal();
       });
-    },
+    })
+    .catch(error => {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.response?.data?.message || 'There was a problem creating the company',
+      });
+    });
+  
+}
+,
+    // createCompany() {
+    //   axios.post('/api/saveCompanyDetails', this.selectedCompany)
+    //     .then(() => {
+    //       Swal.fire({
+    //         icon: 'success',
+    //         title: 'Created',
+    //         text: 'The company was created successfully',
+    //       }).then(() => {
+    //         this.fetchCompanyList();
+    //         this.closeModal();
+    //       });
+    //     })
+    //     .catch(error => {
+    //       Swal.fire({
+    //         icon: 'error',
+    //         title: 'Error',
+    //         text: error.response?.data?.message || 'There was a problem creating the company',
+    //       });
+    //     });
+    // },
+//     updateCompany() {
+//       const databases = new Databases(client);
+//   // Assuming 'companies' is your collection ID and 'databaseId' is your database ID
+//    const databaseId = '66cc10ed002e90bf6173';
+//   const collectionId = '66cf2d3f0024b79b4fbd';
+//   console.log('Document ID:', this.selectedCompany.id);
+//   databases.updateDocument(databaseId, collectionId, this.selectedCompany.$id, this.selectedCompany)
+//     .then(() => {
+//       Swal.fire({
+//         icon: 'success',
+//         title: 'Updated',
+//         text: 'The company was updated successfully',
+//       }).then(() => {
+//         this.fetchCompanyList();
+//         this.closeModal();
+//       });
+//     })
+//     .catch(error => {
+//       Swal.fire({
+//         icon: 'error',
+//         title: 'Error',
+//         text: error.message || 'There was a problem updating the company',
+//       });
+//     });
+// }
+// updateCompany() {
+//   const databases = new Databases(client);
+//   const databaseId = '66cc10ed002e90bf6173';
+//   const collectionId = '66cf2d3f0024b79b4fbd';
+
+//   if (!this.selectedCompany.id) {
+//     Swal.fire({
+//       icon: 'error',
+//       title: 'Error',
+//       text: 'Document ID is missing or invalid.',
+//     });
+//     return;
+//   }
+
+//   // Clean the selectedCompany object
+//   const { id, ...updateData } = this.selectedCompany;
+
+//   databases.updateDocument(databaseId, collectionId, id, updateData)
+//     .then(() => {
+//       Swal.fire({
+//         icon: 'success',
+//         title: 'Updated',
+//         text: 'The company was updated successfully',
+//       }).then(() => {
+//         this.fetchCompanyList();
+//         this.closeModal();
+//       });
+//     })
+//     .catch(error => {
+//       Swal.fire({
+//         icon: 'error',
+//         title: 'Error',
+//         text: error.message || 'There was a problem updating the company',
+//       });
+//     });
+// }
+// updateCompany() {
+//   const databases = new Databases(client);
+//   const dbId = '66cc10ed002e90bf6173';
+//   const cid = '66cf2d3f0024b79b4fbd';
+
+//   // Check the structure of selectedCompany before updating
+//   console.log('Document before update:', this.selectedCompany);
+
+//   // Ensure only schema fields are included
+//   const { id, ...updateData } = this.selectedCompany;
+
+//   // Validate that id is correctly set
+//   if (!id) {
+//     Swal.fire({
+//       icon: 'error',
+//       title: 'Error',
+//       text: 'Document ID is missing or invalid.',
+//     });
+//     return;
+//   }
+
+//   databases.updateDocument(dbId, cid, id, updateData)
+//     .then(() => {
+//       Swal.fire({
+//         icon: 'success',
+//         title: 'Updated',
+//         text: 'The company was updated successfully',
+//       }).then(() => {
+//         this.fetchCompanyList();
+//         this.closeModal();
+//       });
+//     })
+//     .catch(error => {
+//       Swal.fire({
+//         icon: 'error',
+//         title: 'Error',
+//         text: error.message || 'There was a problem updating the company',
+//       });
+//     });
+// }
+
+updateCompany() {
+  const databases = new Databases(client);
+  const dbId = '66cc10ed002e90bf6173';
+  const cid = '66cf2d3f0024b79b4fbd';
+
+  // Check the structure of selectedCompany before updating
+  console.log('Document before update:', this.selectedCompany);
+
+  // Ensure only schema fields are included
+  const { id, name, email, phone } = this.selectedCompany;
+
+  // Validate that id is correctly set
+  if (!id) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Document ID is missing or invalid.',
+    });
+    return;
+  }
+
+  // Create the payload with only the fields to be updated
+  const payload = {
+    name,
+    email,
+    phone
+  };
+
+  // Perform the update operation
+  databases.updateDocument(dbId, cid, id, payload)
+    .then(() => {
+      Swal.fire({
+        icon: 'success',
+        title: 'Updated',
+        text: 'The company was updated successfully',
+      }).then(() => {
+        this.fetchCompanyList();
+        this.closeModal();
+      });
+    })
+    .catch(error => {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message || 'There was a problem updating the company',
+      });
+    });
+}
+
+,
+    // updateCompany() {
+    //   axios.put(`/api/updateCompanyDetails/${this.selectedCompany.id}`, this.selectedCompany)
+    //     .then(() => {
+    //       Swal.fire({
+    //         icon: 'success',
+    //         title: 'Updated',
+    //         text: 'The company was updated successfully',
+    //       }).then(() => {
+    //         this.fetchCompanyList();
+    //         this.closeModal();
+    //       });
+    //     })
+    //     .catch(error => {
+    //       Swal.fire({
+    //         icon: 'error',
+    //         title: 'Error',
+    //         text: error.response?.data?.message || 'There was a problem updating the company',
+    //       });
+    //     });
+    // },
+    // deleteCompany(id) {
+    //   Swal.fire({
+    //     title: 'Are you sure?',
+    //     text: "You won't be able to revert this!",
+    //     icon: 'warning',
+    //     showCancelButton: true,
+    //     confirmButtonColor: '#3085d6',
+    //     cancelButtonColor: '#d33',
+    //     confirmButtonText: 'Yes, delete it!'
+    //   }).then((result) => {
+    //     if (result.isConfirmed) {
+    //       axios.delete(`/api/deleteCompanyDetails/${id}`)
+    //         .then(() => {
+    //           Swal.fire({
+    //             icon: 'success',
+    //             title: 'Company deleted successfully!',
+    //             showConfirmButton: false,
+    //             timer: 1500
+    //           });
+    //           this.fetchCompanyList(); // Refresh list after deletion
+    //         })
+    //         .catch(error => {
+    //           Swal.fire({
+    //             icon: 'error',
+    //             title: 'An Error Occurred!',
+    //             showConfirmButton: false,
+    //             timer: 1500
+    //           });
+    //           console.error('Error deleting company:', error);
+    //         });
+    //     }
+    //   });
+    // },
+    deleteCompany(id) {
+  Swal.fire({
+    title: 'Are you sure?',
+    text: "You won't be able to revert this!",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Yes, delete it!'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      const databases = new Databases(client);
+      const dbId = '66cc10ed002e90bf6173'; // Your database ID
+      const collectionId = '66cf2d3f0024b79b4fbd'; // Your collection ID
+
+      // Perform the delete operation
+      databases.deleteDocument(dbId, collectionId, id)
+        .then(() => {
+          Swal.fire({
+            icon: 'success',
+            title: 'Company deleted successfully!',
+            showConfirmButton: false,
+            timer: 1500
+          });
+          this.fetchCompanyList(); // Refresh list after deletion
+        })
+        .catch(error => {
+          Swal.fire({
+            icon: 'error',
+            title: 'An Error Occurred!',
+            text: error.message || 'There was a problem deleting the company',
+            showConfirmButton: false,
+            timer: 1500
+          });
+          console.error('Error deleting company:', error);
+        });
+    }
+  });
+}
+
+,
     changePage(page) {
       if (page > 0 && page <= this.totalPages) {
         this.currentPage = page;

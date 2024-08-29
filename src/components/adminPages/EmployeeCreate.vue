@@ -65,9 +65,10 @@
 </template>
 
 <script>
-import axios from 'axios';
+// import axios from 'axios';
 import Swal from 'sweetalert2';
-
+import { Databases,ID } from 'appwrite';  // Ensure ID is imported along with Databases
+import { client } from '/src/appwrite';
 export default {
   name: 'EmployeeCreate',
   data() {
@@ -89,60 +90,115 @@ export default {
   },
   methods: {
     handleSubmit() {
-      this.submitted = true; // Set flag to true when form is submitted
-      this.errors = {}; // Clear previous errors
+  this.submitted = true; // Set flag to true when form is submitted
+  this.errors = {}; // Clear previous errors
 
-      // Validate form before sending the request
-      if (!this.validateForm()) {
-        this.isSaving = false;
-        return;
+  // Validate form before sending the request
+  if (!this.validateForm()) {
+    this.isSaving = false;
+    return;
+  }
+
+  // Send data to AppWrite
+  this.isSaving = true;
+
+  const databases = new Databases(client); // Initialize the Databases service
+  const dbId = '66cc10ed002e90bf6173'; // Replace with your actual database ID
+  const collectionId = '66cfc6ec0005fdc28b38'; // Replace with your actual collection ID
+
+  databases.createDocument(dbId, collectionId, ID.unique(), this.form)
+    .then(response => {
+      // Check if the document was created successfully
+      if (response.$id) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Employee details saved successfully!',
+          showConfirmButton: true,
+          timer: 1500
+        }).then(() => {
+          // Redirect to the employee list page after the message is shown
+          this.$router.push('/employeelist');
+        });
+        this.resetForm();
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'An error occurred while saving employee details!',
+          text: 'Unexpected error occurred',
+          showConfirmButton: true
+        });
       }
+    })
+    .catch(error => {
+      // Handle error response
+      console.error('Error occurred:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'An error occurred while saving employee details!',
+        text: error.message || 'Unexpected error occurred',
+        showConfirmButton: true
+      });
+    })
+    .finally(() => {
+      this.isSaving = false; // Reset saving flag
+    });
+}
+,
+    // handleSubmit() {
+    //   this.submitted = true; // Set flag to true when form is submitted
+    //   this.errors = {}; // Clear previous errors
 
-      // Send POST request to the backend with JSON data
-      this.isSaving = true;
-      axios.post('/api/saveEmployeeDetails', this.form, {
-        headers: {
-          'Content-Type': 'application/json' // Set the content type to JSON
-        }
-      })
-      .then(response => {
-          // Check if the overallStatus indicates success
-          if (response.data.overallStatus === 'success') {
-            // Handle successful response
-            Swal.fire({
-              icon: 'success',
-              title: 'Employee details saved successfully!',
-              showConfirmButton: true,
-              timer: 1500
-            }).then(() => {
-              // Redirect to the employee list page after the message is shown
-              this.$router.push('/user/admin/employeelist');
-            });
-            this.resetForm();
-          } else {
-            // If the overallStatus is not success, treat it as an error
-            Swal.fire({
-              icon: 'error',
-              title: 'An error occurred while saving employee details!',
-              text: response.data.message || 'Unexpected error occurred',
-              showConfirmButton: true
-            });
-          }
-        })
-      // .catch(error => {
-      //   // Handle error response
-      //   console.error('Error occurred:', error.response ? error.response.data : error.message);
-      //   Swal.fire({
-      //     icon: 'error',
-      //     title: 'An error occurred while saving employee details!',
-      //     text: error.response ? error.response.data.message : error.message,
-      //     showConfirmButton: true
-      //   });
-      // })
-      // .finally(() => {
-      //   this.isSaving = false; // Reset saving flag
-      // });
-    },
+    //   // Validate form before sending the request
+    //   if (!this.validateForm()) {
+    //     this.isSaving = false;
+    //     return;
+    //   }
+
+    //   // Send POST request to the backend with JSON data
+    //   this.isSaving = true;
+    //   axios.post('/api/saveEmployeeDetails', this.form, {
+    //     headers: {
+    //       'Content-Type': 'application/json' // Set the content type to JSON
+    //     }
+    //   })
+    //   .then(response => {
+    //       // Check if the overallStatus indicates success
+    //       if (response.data.overallStatus === 'success') {
+    //         // Handle successful response
+    //         Swal.fire({
+    //           icon: 'success',
+    //           title: 'Employee details saved successfully!',
+    //           showConfirmButton: true,
+    //           timer: 1500
+    //         }).then(() => {
+    //           // Redirect to the employee list page after the message is shown
+    //           this.$router.push('/user/admin/employeelist');
+    //         });
+    //         this.resetForm();
+    //       } else {
+    //         // If the overallStatus is not success, treat it as an error
+    //         Swal.fire({
+    //           icon: 'error',
+    //           title: 'An error occurred while saving employee details!',
+    //           text: response.data.message || 'Unexpected error occurred',
+    //           showConfirmButton: true
+    //         });
+    //       }
+    //     })
+    //   // .catch(error => {
+    //   //   // Handle error response
+    //   //   console.error('Error occurred:', error.response ? error.response.data : error.message);
+    //   //   Swal.fire({
+    //   //     icon: 'error',
+    //   //     title: 'An error occurred while saving employee details!',
+    //   //     text: error.response ? error.response.data.message : error.message,
+    //   //     showConfirmButton: true
+    //   //   });
+    //   // })
+    //   // .finally(() => {
+    //   //   this.isSaving = false; // Reset saving flag
+    //   // });
+    // },
     validateForm() {
       let valid = true;
       // First Name validation
