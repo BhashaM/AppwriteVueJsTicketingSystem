@@ -12,7 +12,7 @@
             </div>
             <div class="col-md-4">
               <input type="text" class="form-control" placeholder="search..." v-model="searchQuery"
-                @input="filterTickets">
+                @input="filterEmployees">
             </div>
           </div>
           <table class="table table-bordered">
@@ -126,7 +126,9 @@ export default {
   },
   data() {
     return {
+      
       employees: [],
+      filteredEmployees: [],
       selectedEmployee: {
         firstName: '',
         lastName: '',
@@ -140,6 +142,7 @@ export default {
         { name: 'ALL', label: 'ALL' },
         // Add other tabs if needed
       ],
+      searchQuery: '',
       currentPage: 1,
       itemsPerPage: 5, // Number of items per page
     };
@@ -149,12 +152,12 @@ export default {
   },
   computed: {
     totalPages() {
-      return Math.ceil(this.employees.length / this.itemsPerPage);
+      return Math.ceil(this.filteredEmployees.length / this.itemsPerPage);
     },
     paginatedData() {
       const start = (this.currentPage - 1) * this.itemsPerPage;
       const end = start + this.itemsPerPage;
-      return this.employees.slice(start, end);
+      return this.filteredEmployees.slice(start, end);
     },
   },
 
@@ -163,6 +166,16 @@ export default {
       this.activeTab = tabName;
       // Filter employees based on activeTab if needed
     },
+    filterEmployees() {
+    const searchLowerCase = this.searchQuery.toLowerCase();
+    this.filteredEmployees = this.employees.filter(employee => 
+      Object.values(employee).some(value => 
+        String(value).toLowerCase().includes(searchLowerCase)
+      )
+    );
+  },
+  // Other methods...
+
     // fetchEmployeeList() {
     //   axios.get('/api/getEmployeelist')
     //     .then(response => {
@@ -183,6 +196,7 @@ export default {
     .then(response => {
       this.employees = response.documents; // Get the list of documents (employees)
       console.log(this.employees);
+      this.filteredEmployees = this.employees; // Initialize filtered list
     })
     .catch(error => {
       console.error('Error fetching employees:', error);
