@@ -161,7 +161,8 @@
                                 <div class="col-md-4">
                                     <div class="form-group">
                                         <label for="createdOn" class="form-label">Ticket Type</label>
-                                        <input type="text" v-model="selectedTicket.ticketTypeName" class="form-control" />
+                                        <input type="text" v-model="selectedTicket.ticketTypeName"
+                                            class="form-control" />
                                     </div>
                                 </div>
                                 <div class="col-md-3">
@@ -201,7 +202,8 @@
                                     </div>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" @click="closeModal">Close</button>
+                                    <button type="button" class="btn btn-secondary" @click="closeModal"
+                                        data-bs-dismiss="modal">Close</button>
                                     <button v-if="selectedTicket.status == 'SUBMITTED'" type="submit"
                                         class="btn btn-primary">Save</button>
                                 </div>
@@ -215,11 +217,15 @@
 </template>
 
 <script>
-import { ref, onMounted,computed  } from 'vue';
-import { Databases } from 'appwrite';
+import { ref, onMounted, computed } from 'vue';
+import { Databases, Storage } from 'appwrite';
 import { client } from '/src/appwrite';
+import LayoutDiv from '@/components/LayoutDiv.vue';
 
 export default {
+    components: {
+        LayoutDiv,
+    },
     name: 'TicketList',
     setup() {
         const tickets = ref([]);
@@ -292,6 +298,7 @@ export default {
         };
 
         const closeModal = () => {
+            console.log('Close button clicked');
             showModal.value = false;
         };
 
@@ -350,6 +357,19 @@ export default {
             const year = date.getUTCFullYear();
             return `${day}-${month}-${year}`;
         };
+        const storage = new Storage(client);
+
+        const downloadFile = async (fileId) => {
+            try {
+                const fileViewUrl = storage.getFileView('66cd698d001272b42785', fileId); // Replace 'bucketId' with your actual bucket ID
+
+                // Open the file view URL in a new tab
+                window.open(fileViewUrl, '_blank');
+            } catch (error) {
+                console.error('Error opening file:', error);
+                // Handle the error, e.g., show a notification to the user
+            }
+        };
 
         onMounted(() => {
             fetchTicketList();
@@ -372,7 +392,9 @@ export default {
             changePage,
             totalPages,
             paginatedData,
-            formatDate
+            formatDate,
+            downloadFile,
+            showModal
         };
     },
     // computed: {
